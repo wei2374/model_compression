@@ -46,6 +46,11 @@
 *.mod*
 *.cmd
 .tmp_versions/
+tests/
+hardware/
+images/
+documents
+output/
 modules.order
 Module.symvers
 Mkfile.old
