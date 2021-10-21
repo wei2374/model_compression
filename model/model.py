@@ -20,7 +20,7 @@ class CompressModel:
 
         path = os.getcwd()
         self.foldername = path+f'/output/{time.time()}'
-        os.mkdir(self.foldername)
+        os.makedirs(self.foldername)
         self.logger = Logger(self.foldername)
         self.logger.writeln("Information of original model")
         self.logger.log_model(self.original_model)

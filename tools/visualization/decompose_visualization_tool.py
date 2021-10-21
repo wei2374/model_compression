@@ -37,4 +37,5 @@ def plot_rank_percentage(layer_ranks, method, foldername):
     filename = foldername+f"/rank_estimation.png"
     plt.ylim((0, 1))
     plt.savefig(filename)
+    plt.clf()
     # plt.show()

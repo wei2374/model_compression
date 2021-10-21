@@ -50,7 +50,8 @@ tests/
 hardware/
 images/
 documents
-output/
+/demo/output/
+/output/
 modules.order
 Module.symvers
 Mkfile.old
