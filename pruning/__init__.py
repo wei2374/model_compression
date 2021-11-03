@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tools.visualization.pruning_visualization_tool import visualize_model
+from tools.visualization.model_visualization import visualize_model
 from .pruning_ratio_estimation.channel_estimator import get_prune_ratio
 from .pruning_methods.layerwise_pruning import channel_prune_model_layerwise
 from .pruning_methods.whole_pruning import channel_prune_model_whole
@@ -23,11 +23,11 @@ def build_pruned_model(original_model, new_model_param, layer_types, foldername)
 
             # model_config['layers'][i]['config']['trainable'] = True
 
-        elif model_config['layers'][i]['class_name'] == "BatchNormalization":
-            model_config['layers'][i]['config']['trainable'] = False
+        # elif model_config['layers'][i]['class_name'] == "BatchNormalization":
+        #     model_config['layers'][i]['config']['trainable'] = False
 
-        elif model_config['layers'][i]['class_name'] == "DepthwiseConv2D":
-            model_config['layers'][i]['config']['trainable'] = False
+        # elif model_config['layers'][i]['class_name'] == "DepthwiseConv2D":
+        #     model_config['layers'][i]['config']['trainable'] = False
 
     original_model = tf.keras.Model().from_config(model_config)
     original_model.build(input_shape=original_model.input_shape)
@@ -45,17 +45,39 @@ def build_pruned_model(original_model, new_model_param, layer_types, foldername)
 def model_prune(
         raw_model,
         dataset,
-        method,
-        param,
         foldername,
+        method,
+        re_method,
+        param,
+        criterion,
         max_index,
         min_index=1,
         big_kernel_only=False,
-        criterion="gradient2",
         option="CL",
-        re_method="uniform",
-        soft_pruning=False
         ):
+    '''
+    Prune layers based on pruning settings
+
+    Key arguments:
+    raw_model -- model to be pruned
+    foldername -- folder used to save related logging and pictures
+    method -- pruning method
+    schema -- decomposition schemes
+    re_method -- Methods for estimating the prune ratio for each layer
+    param -- parameter necessary for prune ratio estimation methods
+    criterion -- channel importance estimation methods
+    min_index -- only prune the layers whose id is behind min_index
+    max_index -- only prune the layers whose id is before min_index
+    
+    big_kernel_only -- if only prune layer with large receptive field
+    option -- "CL"-> only prune convolutional layers
+              "FL"-> only prune fully connected layers
+              "CLFL"-> prune convolutional layers as well as
+                     fully connected layers
+
+    Return:
+    pruned_model -- model that is pruned
+    '''
     if method == "layerwise":
         prune_ratio = get_prune_ratio(
                     raw_model,

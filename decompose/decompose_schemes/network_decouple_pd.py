@@ -30,7 +30,10 @@ def network_decouple_conv_layer_pd(
         U, sigma, V = torch.svd(W)
         valid_idx.append(energy_threshold(sigma, param))
     item_num = min(max(valid_idx), min(dim[2]*dim[3], dim[1]))
-    # print(f"Breaks into {item_num} conv channels")
+    # if rank is None:
+    item_num = min(max(valid_idx), min(dim[2]*dim[3], dim[1]))
+    # else:
+    #   item_num = rank[0]
     pw = [np.zeros((dim[0], dim[1], 1, 1)) for i in range(item_num)]
     dw = [np.zeros((dim[0], 1, dim[2], dim[3])) for i in range(item_num)]
 

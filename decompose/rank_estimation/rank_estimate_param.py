@@ -34,6 +34,14 @@ def estimate_ranks_param(layer, factor=0.2, schema="tucker2D"):
         N = math.ceil((spatial_size*spatial_size*input_channel*output_channel*factor)/(
             spatial_size*spatial_size*output_channel+input_channel*output_channel))
         return N, N
+    
+    if schema == "depthwise_dp":
+        output_channel = layer_data.shape[0]
+        input_channel = layer_data.shape[1]
+        spatial_size = layer_data.shape[2]
+        N = math.ceil((spatial_size*spatial_size*input_channel*output_channel*factor)/(
+            spatial_size*spatial_size*input_channel+input_channel*output_channel))
+        return N, N
 
     if schema == "VH":
         output_channel = layer_data.shape[0]

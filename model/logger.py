@@ -1,6 +1,3 @@
-from keras_flops import get_flops
-
-
 class Logger:
     def __init__(
                 self,
@@ -10,9 +7,7 @@ class Logger:
         f.close()
 
     def log_model(self, model):
-        flops = get_flops(model, batch_size=1)
         f = open(self.filename, "a")
-        f.write(f"model has {flops} FLOPS\n")
         f.close()
 
     def log_decomposition(self, decomposition_setting):

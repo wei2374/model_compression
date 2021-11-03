@@ -6,7 +6,6 @@ from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.callbacks import ModelCheckpoint, CSVLogger
 from .cyclic import CyclicLR
 import numpy as np
-# from tools.visualization import visualize_model
 from keras_flops import get_flops
 
 
@@ -41,7 +40,7 @@ def validate_model(
 
     my_model.compile(metrics=[acc1, acc5])
     flops = get_flops(my_model, batch_size=1)
-    print(flops)
+    # print(flops)
     with tf.device('/gpu:0'):
         history = my_model.evaluate(valid_data, verbose=1)
 
@@ -88,7 +87,7 @@ def train_model(
 
         initial_learning_rate = 1e-5
         maximal_learning_rate = 1e-3
-        step_size = train_data.n/2
+        step_size = 3000 #train_data.n/2
         opt = SGD(lr=initial_learning_rate, momentum=0.9)
         clr = CyclicLR(
             base_lr=initial_learning_rate,
@@ -108,7 +107,7 @@ def train_model(
                 save_best_only=True)
 
         early_stopper = tf.keras.callbacks.EarlyStopping(
-                    monitor="val_top1", patience=1, mode="max"
+                    monitor="val_top1", patience=3, mode="max"
                 )
         csv_logger = CSVLogger(csv_path)
         with tf.device('/gpu:0'):

@@ -132,7 +132,9 @@ def delete_filter_after(
             return new_model_param
 
     elif layer_type == "conv2D":
-        while(not isinstance(current_layer.outbound_nodes[0].layer, tf.keras.layers.Dense)):
+        while(not isinstance(current_layer.outbound_nodes[0].layer, tf.keras.layers.Flatten) and\
+            not isinstance(current_layer.outbound_nodes[0].layer, tf.keras.layers.Dense) and\
+            not isinstance(current_layer.outbound_nodes[0].layer, tf.keras.layers.GlobalAveragePooling2D)):
             following_layer = current_layer.outbound_nodes[0].layer
             following_index = get_layer_index(layer_index_dic, following_layer)
             if isinstance(following_layer, tf.keras.layers.BatchNormalization):
@@ -142,7 +144,7 @@ def delete_filter_after(
             # The conv2D layer is before a branch
             if(len(following_layer.outbound_nodes) == 2 and
                len(following_layer.inbound_nodes[0].flat_input_ids) == 1):
-                # print("This Conv2D is before a Branch")
+                # # print("This Conv2D is before a Branch")
                 branch_layer_index = following_index
                 # Delete the output channels of current Conv2D
                 delete_conv2d_output(new_model_param, layer_bias, layer_index, filter, soft_prune)
@@ -201,7 +203,7 @@ def delete_filter_after(
 
             # This conv2D layer is followed by a conv2D
             elif isinstance(following_layer, tf.compat.v1.keras.layers.Conv2D):
-                # print("This Conv2D is before a Conv2D")
+                # # print("This Conv2D is before a Conv2D")
                 # Delete the input channels of following Conv2D
                 delete_conv2d_intput(new_model_param, following_index, filter, soft_prune)
                 if (not isinstance(following_layer, tf.keras.layers.DepthwiseConv2D)):
@@ -222,7 +224,7 @@ def delete_filter_after(
                 up_layer = get_up_layers(layer_index_dic, layer_index)
                 # right layer
                 if len(up_layer.outbound_nodes) == 2:
-                    # print("This is a conv2D at right up position of a add layer")
+                    # # print("This is a conv2D at right up position of a add layer")
                     # 1. Delete the output channels of current Conv2D
                     delete_conv2d_output(
                         new_model_param, layer_bias, layer_index, filter, soft_prune)
@@ -293,36 +295,37 @@ def delete_filter_after(
                     return new_model_param
 
                 else:
-                    # print("LAST LEFT")
+                    # # print("LAST LEFT")
                     add_layer = following_layer
                     next_layer = add_layer.outbound_nodes[0].layer
                     while(len(next_layer.outbound_nodes) == 1):
                         if isinstance(next_layer, tf.keras.layers.Dense):
                             dense_layer_index = get_layer_index(layer_index_dic, next_layer)
-                            # print("Got a Dense Layer at the end")
+                            # # print("Got a Dense Layer at the end")
                             break
 
                         next_layer = next_layer.outbound_nodes[0].layer
                     return new_model_param
             current_layer = following_layer
 
-        # print("Got a Dense Layer at the end")
+        # # print("Got a Dense Layer at the end")
         # Delete the output channels of current Conv2D
-        delete_conv2d_output(new_model_param, layer_bias, layer_index, filter, soft_prune)
-        dense_layer = current_layer.outbound_nodes[0].layer
-        dense_layer_index = get_layer_index(layer_index_dic, dense_layer)
-        layer_output = layer_index_dic[dense_layer_index-2]
-        layer_output_shape = layer_output.output_shape
-        shape = (layer_output_shape[1]*layer_output_shape[2])
+        if isinstance(current_layer.outbound_nodes[0].layer, tf.keras.layers.Dense):
+            delete_conv2d_output(new_model_param, layer_bias, layer_index, filter, soft_prune)
+            dense_layer = current_layer.outbound_nodes[0].layer
+            dense_layer_index = get_layer_index(layer_index_dic, dense_layer)
+            layer_output = layer_index_dic[dense_layer_index-2]
+            layer_output_shape = layer_output.output_shape
+            shape = (layer_output_shape[1]*layer_output_shape[2])
 
-        filters = []
-        channels = layer_output_shape[3]
-        new_filter = filter[0]
-        for s in range(shape):
-            filters = np.concatenate([filters, new_filter])
-            new_filter = new_filter+channels
-        filters = [int(i) for i in filters]
-        delete_dense_input(new_model_param, dense_layer_index, filters, soft_prune)
+            filters = []
+            channels = layer_output_shape[3]
+            new_filter = filter[0]
+            for s in range(shape):
+                filters = np.concatenate([filters, new_filter])
+                new_filter = new_filter+channels
+            filters = [int(i) for i in filters]
+            delete_dense_input(new_model_param, dense_layer_index, filters, soft_prune)
         return new_model_param
 
 
@@ -345,7 +348,7 @@ def delete_filter_before(
 
         # inside a a sequence
         if isinstance(fore_layer, tf.compat.v1.keras.layers.Conv2D):
-            print("This conv2D is inside a sequence")
+            # # print("This conv2D is inside a sequence")
             fore_layer = current_layer.inbound_nodes[0].inbound_layers
             fore_layer_index = get_layer_index(layer_index_dic, fore_layer)
             up_delete_until_conv2D(
@@ -353,11 +356,11 @@ def delete_filter_before(
             return new_model_param, layer_output_shape
 
         elif isinstance(fore_layer, tf.keras.layers.Add):
-            print("This conv2D is before an add layer, ignore")
+            # print("This conv2D is before an add layer, ignore")
             return new_model_param, layer_output_shape
 
         elif len(fore_layer.outbound_nodes) == 2:
-            print("This conv2D is at the beginning edge")
+            # print("This conv2D is at the beginning edge")
 
             next_layer = current_layer.outbound_nodes[0].layer
             while(not isinstance(next_layer, tf.compat.v1.keras.layers.Conv2D)
@@ -365,14 +368,15 @@ def delete_filter_before(
                 next_layer = next_layer.outbound_nodes[0].layer
 
             if isinstance(next_layer, tf.compat.v1.keras.layers.Conv2D):
-                print("left edge")
+                # print("left edge")
+                pass
 
             elif isinstance(next_layer, tf.keras.layers.Add):
-                print("right edge")
+                # print("right edge")
                 branch_layer = current_layer.inbound_nodes[0].inbound_layers
                 continue_flag = True
                 while(continue_flag):
-                    print("a block before")
+                    # print("a block before")
                     # Delete neighbor
                     branch_layer_index = get_layer_index(layer_index_dic, branch_layer)
                     left_conv_layer = get_down_left_layer(layer_index_dic, branch_layer_index)
@@ -402,17 +406,18 @@ def delete_filter_before(
                     right_end_layer = get_up_right_layer(layer_index_dic, add_layer_index)
                     right_end_layer_index = get_layer_index(layer_index_dic, right_end_layer)
                     if(len(right_end_layer.outbound_nodes) == 1):
-                        print("End point, break")
+                        # print("End point, break")
                         continue_flag = False
                         up_delete_until_conv2D(
                             layer_index_dic, new_model_param,
                             right_end_layer_index, filter)
                     else:
-                        print("continue")
+                        # print("continue")
                         branch_layer = right_end_layer
 
     else:
-        print("No conv layer")
+        # print("No conv layer")
+        pass
 
     return new_model_param, layer_output_shape
 

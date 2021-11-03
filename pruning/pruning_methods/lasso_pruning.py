@@ -125,7 +125,7 @@ def compute_pruned_kernel(
         tmp = sum(idxs)
         return idxs, tmp, solver.coef_
 
-    print("pruned channel selecting")
+    # print("pruned channel selecting")
     start = timer()
 
     if c_new == c_in:
@@ -142,7 +142,7 @@ def compute_pruned_kernel(
                 break
             else:
                 right *= 2
-            print("relax right to {}".format(right))
+            # print("relax right to {}".format(right))
 
         while True:
             if lbound < 0:
@@ -217,21 +217,21 @@ def prune_kernel_lasso(
         if fore_layer == []:
             new_model_param = layer_params
             num_new_filter = layer_params[index][0].shape[-1]
-            print("No pruning implemented for start conv layers")
+            # print("No pruning implemented for start conv layers")
             return new_model_param, num_new_filter, layer_output_shape, filters
 
         if isinstance(fore_layer, tf.keras.layers.Add):
             after_add = True
 
         if len(fore_layer.outbound_nodes) == 2:
-            print("This conv2D is at the beginning edge")
+            # print("This conv2D is at the beginning edge")
             next_layer = current_layer.outbound_nodes[0].layer
             while(not isinstance(next_layer, tf.compat.v1.keras.layers.Conv2D)
                   and not isinstance(next_layer, tf.keras.layers.Add)):
                 next_layer = next_layer.outbound_nodes[0].layer
 
             if isinstance(next_layer, tf.compat.v1.keras.layers.Conv2D):
-                print("left edge")
+                # print("left edge")
                 left_edge_flag = True
 
         ############################################
@@ -242,7 +242,7 @@ def prune_kernel_lasso(
                 model, layer, layer_index_dic, dataset=dataset)
             error1 = rel_error(
                 inputs.reshape(inputs.shape[0], -1).dot(W.reshape(-1, W.shape[-1])), outputs)
-            print('feature map rmse: {}'.format(error1))
+            # print('feature map rmse: {}'.format(error1))
 
             error2 = 1
             # while(error2 > 0.05 and prune_ratio < 1):
@@ -261,8 +261,8 @@ def prune_kernel_lasso(
 
             error2 = rel_error(
                 inputs[:, :, :, idxs].reshape(inputs.shape[0], -1).dot(newW2.T), outputs)
-            print('feature map rmse: {}'.format(error2))
-            print('prune_ratio is: {}'.format(prune_ratio))
+            # print('feature map rmse: {}'.format(error2))
+            # print('prune_ratio is: {}'.format(prune_ratio))
             #    prune_ratio += 0.1
             '''
             if error2 > 0.1 or prune_ratio > 0.9:
@@ -274,8 +274,8 @@ def prune_kernel_lasso(
 
             else:
             '''
-            print("PRUN IT")
-            print('Prune {} c_in from {} to {}'.format(layer.name, inputs.shape[-1], sum(idxs)))
+            # print("PRUN IT")
+            # print('Prune {} c_in from {} to {}'.format(layer.name, inputs.shape[-1], sum(idxs)))
             prun_filter = []
             for i, idx in enumerate(idxs):
                 if not idx:
@@ -297,12 +297,12 @@ def prune_kernel_lasso(
         else:
             new_model_param = layer_params
             num_new_filter = layer_params[index][0].shape[-1]
-            print("No pruning implemented for left edge conv layers")
+            # print("No pruning implemented for left edge conv layers")
 
     else:
         new_model_param = layer_params
         num_new_filter = layer_params[index][0].shape[-1]
-        print("No pruning implemented for conv layers")
+        # print("No pruning implemented for conv layers")
 
     return new_model_param, num_new_filter, layer_output_shape, filters
 
@@ -349,4 +349,5 @@ def channel_prune_model_lasso(
                                                         filters=filters,
                                                         layer_index_dic=layer_index_dic,
                                                         dataset=dataset)
+            bar.next((100/len(my_model.layers)))
     return layer_params, layer_types

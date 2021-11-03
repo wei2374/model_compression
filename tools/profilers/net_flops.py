@@ -157,11 +157,11 @@ def net_flops(model, table=False):
         t_flops += flops
         
 
-        if (table == True):
-            print('%25s | %16s | %16s | %16s | %16s | %6s | %5.4f' % (
-                name, str(i_shape), str(o_shape), str(ks), str(filters), str(strides), flops))
+    #     if (table == True):
+    #         print('%25s | %16s | %16s | %16s | %16s | %6s | %5.4f' % (
+    #             name, str(i_shape), str(o_shape), str(ks), str(filters), str(strides), flops))
 
-    print('\nTotal FLOPS : %10.8f\n' % (t_flops))
-    print('\nTotal MACCs: %10.8f\n' % (t_macc))
+    # print('\nTotal FLOPS : %10.8f\n' % (t_flops))
+    # print('\nTotal MACCs: %10.8f\n' % (t_macc))
 
     return big_kernels, small_kernels, depthwise, rect, t_flops

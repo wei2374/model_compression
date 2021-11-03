@@ -24,7 +24,7 @@ def decompose_conv2d_layer(
     index -- index of layer
     param -- configuration for sparsity estimation methods
     schema -- decomposition method
-    rank --
+    rank -- sparsifity estimation parameter
 
     Return:
     new_layers -- decomposed layers in a dictionary format "{index of layer}:

@@ -11,6 +11,7 @@ def plot_training_result(history, clr, foldername):
     plt.xlabel('epoch')
     plt.legend(['train', 'val'], loc='upper left')
     plt.savefig(foldername+"/training_accuracy.png")
+    plt.clf()
     # plt.show()
 
     plt.clf()
@@ -21,6 +22,7 @@ def plot_training_result(history, clr, foldername):
     plt.xlabel('epoch')
     plt.legend(['train', 'val'], loc='upper left')
     plt.savefig(foldername+"/training_loss.png")
+    plt.clf()
     # plt.show()
 
     if clr is not None:
@@ -32,4 +34,4 @@ def plot_training_result(history, clr, foldername):
         plt.xlabel("Training Iterations")
         plt.ylabel("Learning Rate")
         plt.savefig(foldername+"/learning_rate.png")
-        # plt.show()
+        plt.clf()

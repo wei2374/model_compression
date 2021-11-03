@@ -26,10 +26,10 @@ def network_decouple_conv_layer_dp(
         W = torch.tensor(W)
         U, sigma, V = torch.svd(W)
         valid_idx.append(energy_threshold(sigma, param))
-    if rank is None:
-        item_num = min(max(valid_idx), min(dim[2]*dim[3], dim[1]))
-    else:
-        item_num = rank[0]
+    # if rank is None:
+    item_num = min(max(valid_idx), min(dim[2]*dim[3], dim[1]))
+    # else:
+    #   item_num = rank[0]
     pw = [np.zeros((dim[0], dim[1], 1, 1)) for i in range(item_num)]
     dw = [np.zeros((dim[0], 1, dim[2], dim[3])) for i in range(item_num)]
     # print(f"Breaks into {item_num} conv channels")
@@ -82,17 +82,15 @@ def from_tensor_to_layers(
         p_layers.append(tf.keras.layers.Conv2D(
                     name=layer.name+f"p{i}",
                     filters=output, kernel_size=[1, 1], strides=(1, 1),
-                    input_shape=layer.input_shape[1:],
-                    use_bias=(i == 0 and layer.use_bias))
-                    )
-        d_layers.append(tf.keras.layers.Conv2D(
+                    use_bias=(i == 0 and layer.use_bias)))
+        d_layers.append(tf.keras.layers.DepthwiseConv2D(
                     name=layer.name+f"d{i}",
-                    filters=input, kernel_size=[kernel_size, kernel_size],
+                    kernel_size=[kernel_size, kernel_size],
                     strides=(layer.strides), padding=(layer.padding),
-                    dilation_rate=layer.dilation_rate, groups=input,
-                    activation=layer.activation, use_bias=False)
-                    # use_bias=(i == 0 and layer.use_bias))
-                    )
+                    dilation_rate=layer.dilation_rate,
+                    activation=layer.activation, use_bias=None
+                    ))
+
 
     input_data = tf.keras.layers.Input(shape=layer.input_shape[1:])
     ys = []
@@ -108,7 +106,7 @@ def from_tensor_to_layers(
     model.build(input_shape=layer.input_shape[1:])
 
     for i in range(item_number):
-        d_layers[i].set_weights([np.transpose(dw[i], [2, 3, 1, 0])])
+        d_layers[i].set_weights([np.transpose(dw[i], [2, 3, 0, 1])])
 
         if i == 0:
             if layer.use_bias:

@@ -7,7 +7,7 @@ from tools.progress.bar import Bar
 
 def get_and_plot_activations(model, layer_index_dic, dataset="food20"):
     train_data, _ = get_data_from_dataset(dataset)
-    batches_n = 20
+    batches_n = 40
     crits_act = {}
     activation_layers = {}
     c = 0
