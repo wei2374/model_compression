@@ -203,7 +203,7 @@ def model_decompose(
         min_index=1,
         max_index=1,
         param=0.1,
-        big_kernel_only=False
+        big_kernel_only=True
         ):
     '''
     decompose model

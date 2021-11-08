@@ -188,8 +188,7 @@ def train_model(
                 train_data,
                 epochs=3,
                 validation_data=valid_data,
-                validation_freq=1,
-                verbose=2,
+                verbose=1,
                 callbacks=[checkpointer])
 
             sgd = tf.keras.optimizers.SGD(learning_rate=0.0001)
@@ -201,8 +200,7 @@ def train_model(
                 train_data,
                 epochs=3,
                 validation_data=valid_data,
-                validation_freq=1,
-                verbose=2,
+                verbose=1,
                 callbacks=[checkpointer])
 
             sgd = tf.keras.optimizers.SGD(learning_rate=0.00001)
@@ -214,8 +212,7 @@ def train_model(
                 train_data,
                 epochs=3,
                 validation_data=valid_data,
-                validation_freq=1,
-                verbose=2,
+                verbose=1,
                 callbacks=[checkpointer])
         plot_training_result(history, None, foldername)
 

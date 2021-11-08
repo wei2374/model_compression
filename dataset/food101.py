@@ -168,14 +168,6 @@ def get_food101_data(dataset_dir,
         train_data_dir = "/home/wei-bshg/Documents/datasets/food-101train"
         validation_data_dir = "/home/wei-bshg/Documents/datasets/food-101test"
 
-        # train_datagen = ImageDataGenerator(
-        #                 rescale=1./255,
-        #                 horizontal_flip=False,
-        #                 fill_mode="nearest",
-        #                 zoom_range=0,
-        #                 width_shift_range=0,
-        #                 height_shift_range=0,
-        #                 rotation_range=0)
         train_datagen = ImageDataGenerator(
             rescale=1./255,
             shear_range=0.2,

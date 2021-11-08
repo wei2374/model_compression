@@ -22,7 +22,6 @@ class CompressModel:
         self.original_model = tf.keras.models.load_model(original_model)
         self.dataset = dataset
         self.preprocessing = preprocessing
-        self.model_preprocessing()
         path = os.getcwd()
         self.foldername = path+f'/output/{time.time()}'
         os.makedirs(self.foldername)
@@ -30,47 +29,6 @@ class CompressModel:
         self.logger.writeln("Information of original model")
         # self.evaluate(self.original_model)
 
-    def model_preprocessing(self):
-        'Break the separable convolution 2D layer'
-        conv_map = {}
-        weight_map = {}
-        for index, layer in enumerate(self.original_model.layers):
-            if isinstance(layer, tf.keras.layers.SeparableConv2D):
-                depth_params = layer.get_weights()[0]
-                point_params = layer.get_weights()[1]
-                bias = layer.get_weights()[2] if layer.use_bias else None
-                first_layer = tf.keras.layers.DepthwiseConv2D(
-                                name=layer.name+"_depth",
-                                kernel_size=[depth_params.shape[0], depth_params.shape[1]],
-                                strides=layer.strides, padding=(layer.padding),
-                                dilation_rate=layer.dilation_rate, use_bias=False,
-                                input_shape=layer.input_shape[1:])
-                last_layer = tf.keras.layers.Conv2D(
-                                name=layer.name+"_point",
-                                filters=layer.filters, kernel_size=[point_params.shape[0], point_params.shape[1]],
-                                padding=(layer.padding), dilation_rate=layer.dilation_rate,
-                                use_bias=layer.use_bias,  activation=layer.activation, input_shape=layer.input_shape[1:])
-                
-                # l_model = tf.keras.models.Sequential()
-                # l_model.add(first_layer)
-                # l_model.add(last_layer)
-                # l_model.build()
-
-                # first_layer.set_weights([depth_params])
-                # if layer.use_bias:
-                #     last_layer.set_weights([point_params, bias])
-                # else:
-                #     last_layer.set_weights([point_params])
-
-                conv_map[index] = [first_layer, last_layer]
-                weight_map[index] = [depth_params, point_params, bias]
-
-        self.original_model = insert_layer_nonseq(
-                self.original_model,
-                conv_map.keys(),
-                conv_map,
-                weight_map=weight_map
-        )
 
     def decompose_model(self, decompose_settings):
         if decompose_settings["range"][1] == -1:
@@ -84,7 +42,6 @@ class CompressModel:
                 min_index=decompose_settings["range"][0],
                 max_index=decompose_settings["range"][1],
                 param=decompose_settings["param"],
-                big_kernel_only=decompose_settings["big_kernel_only"],
             )
         model_cmp_flops_plot(self.original_model, self.compressed_model, self.foldername)
         self.logger.log_decomposition(decompose_settings)
@@ -125,7 +82,7 @@ class CompressModel:
                 self,
                 optimizer,
                 small_part,
-                bs=16,
+                bs=8,
                 epoch_n=30,
                 ):
         self.logger.writeln("Start fine-tuning")
@@ -191,5 +148,5 @@ class CompressModel:
             hardware="rasp4",
             device_key="rk3399")
         files = [foldername+"/deploy_lib.so", foldername+"/deploy_param.params", foldername+"/deploy_graph.json"]
-        run_tvm(files, "wei@192.168.2.128")
+        run_tvm(files, server)
         

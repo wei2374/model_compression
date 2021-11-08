@@ -20,5 +20,5 @@ my_model = CompressModel(
 my_model.decompose_model(decompose_setting)
 my_model.evaluate(my_model.compressed_model)
 
-my_model.fine_tuning(optimizer="default", small_part=0.05)
+my_model.fine_tuning(optimizer="default", small_part=1)
 
