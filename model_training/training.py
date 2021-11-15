@@ -82,7 +82,7 @@ def train_model(
 
         initial_learning_rate = 1e-5
         maximal_learning_rate = 1e-3
-        NUM_CLR_CYCLES = 3
+        NUM_CLR_CYCLES = 2
         step_size = train_data.n/NUM_CLR_CYCLES/2
 
         opt = SGD(lr=initial_learning_rate, momentum=0.9)

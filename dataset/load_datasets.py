@@ -5,7 +5,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 def get_data_from_dataset(
             dataset,
-            batch_size=16,
+            batch_size=32,
             validation_split=0.25,
             small_part=1,
             preprocessing="vgg16"

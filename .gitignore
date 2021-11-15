@@ -46,6 +46,9 @@
 *.mod*
 *.cmd
 .tmp_versions/
+token.txt
+.vscode/
+__pycache__/
 tests/
 hardware/
 images/

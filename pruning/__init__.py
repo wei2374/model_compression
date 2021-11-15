@@ -21,13 +21,6 @@ def build_pruned_model(original_model, new_model_param, layer_types, foldername)
             if (model_config['layers'][i+2]['class_name']) == "ReLU":
                 model_config['layers'][i]['config']['trainable'] = True
 
-            # model_config['layers'][i]['config']['trainable'] = True
-
-        # elif model_config['layers'][i]['class_name'] == "BatchNormalization":
-        #     model_config['layers'][i]['config']['trainable'] = False
-
-        # elif model_config['layers'][i]['class_name'] == "DepthwiseConv2D":
-        #     model_config['layers'][i]['config']['trainable'] = False
 
     original_model = tf.keras.Model().from_config(model_config)
     original_model.build(input_shape=original_model.input_shape)
@@ -38,20 +31,21 @@ def build_pruned_model(original_model, new_model_param, layer_types, foldername)
            or layer_types[i] == 'BatchNormalization' or\
            layer_types[i] == 'DepthwiseConv2D' and i > 0:
             original_model.layers[i].set_weights(new_model_param[i])
-    visualize_model(original_model, foldername, prune_ratio)
+    if foldername is not None:
+        visualize_model(original_model, foldername, prune_ratio)
     return original_model
 
 
 def model_prune(
         raw_model,
         dataset,
-        foldername,
         method,
         re_method,
         param,
         criterion,
         max_index,
         min_index=1,
+        foldername=None,
         big_kernel_only=False,
         option="CL",
         ):
@@ -84,7 +78,8 @@ def model_prune(
                     param,
                     re_method=re_method,
                     big_kernel_only=big_kernel_only)
-        plot_prune_ratio(prune_ratio, re_method, foldername)
+        if foldername is not None:
+            plot_prune_ratio(prune_ratio, re_method, foldername)
 
         layer_params, layer_types = channel_prune_model_layerwise(
                     raw_model,
@@ -120,7 +115,8 @@ def model_prune(
                     param,
                     re_method=re_method,
                     big_kernel_only=big_kernel_only)
-        plot_prune_ratio(prune_ratio, re_method, foldername)
+        if foldername is not None:
+            plot_prune_ratio(prune_ratio, re_method, foldername)
 
         layer_params, layer_types = channel_prune_model_lasso(
                     raw_model,

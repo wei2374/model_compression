@@ -41,7 +41,7 @@ def prun_filters_score(
 def channel_prune_model_whole(
                 my_model,
                 prune_ratio,
-                foldername,
+                foldername=None,
                 criterion="gradient",
                 dataset='food101',
                 flops_r=1000,
@@ -124,7 +124,7 @@ def channel_prune_model_whole(
             #                is reduced {pruned_percentage[index]}")
 
             bar.next((100/len(target_layers)))
-
-    plot_prune_ratio(pruned_percentage, criterion, foldername)
+    if foldername is not None:
+        plot_prune_ratio(pruned_percentage, criterion, foldername)
 
     return layer_params, layer_types
