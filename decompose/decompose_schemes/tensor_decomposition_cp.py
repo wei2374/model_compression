@@ -2,7 +2,6 @@ import numpy as np
 import tensorly as tl
 import tensorflow as tf
 from tensorly.decomposition import parafac
-from tensorflow.keras import models
 
 
 def cp_decomposition_conv_layer(
@@ -74,40 +73,32 @@ def from_tensor_to_layers(
                         padding="valid",
                         activation=layer.activation)
 
-    l_model = models.Sequential()
-    l_model.add(pointwise_s_to_r_layer)
-    l_model.add(depthwise_vertical_layer)
-    l_model.add(depthwise_horizontal_layer)
-    l_model.add(pointwise_r_to_t_layer)
-    l_model.build()
+
 
     # This section assign weights to the layers
     H = tf.expand_dims(tf.expand_dims(
         horizontal, axis=0, name=None
     ), axis=2, name=None)
     H = np.transpose(H, (0, 1, 3, 2))
-    depthwise_horizontal_layer.set_weights([H])
 
     V = tf.expand_dims(tf.expand_dims(
         vertical, axis=1, name=None
     ), axis=1, name=None)
     V = np.transpose(V, (0, 1, 3, 2))
-    depthwise_vertical_layer.set_weights([V])
 
     F = tf.expand_dims(tf.expand_dims(
         first, axis=0, name=None
     ), axis=0, name=None)
-    pointwise_s_to_r_layer.set_weights([F])
 
     L = tf.expand_dims(tf.expand_dims(
         np.transpose(last), axis=0, name=None
     ), axis=0, name=None)
+    new_weights = [F, V, H, L]
     if layer.use_bias:
-        pointwise_r_to_t_layer.set_weights([L, bias])
-    else:
-        pointwise_r_to_t_layer.set_weights([L])
+        new_weights.append(bias)
+    
     new_layer = [
         pointwise_s_to_r_layer, depthwise_vertical_layer,
         depthwise_horizontal_layer, pointwise_r_to_t_layer]
 
-    return new_layer
+    return new_layer, new_weights

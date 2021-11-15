@@ -68,17 +68,9 @@ def from_tensor_to_layers(
                     filters=V.shape[3], kernel_size=[V.shape[0], V.shape[1]],
                     padding=(layer.padding), dilation_rate=layer.dilation_rate,
                     use_bias=layer.use_bias,  activation=layer.activation)
-    l_model = models.Sequential()
-    l_model.add(first_layer)
-    l_model.add(last_layer)
-    l_model.build()
-
-    first_layer.set_weights([H])
+    new_weight = [H, V]
     if layer.use_bias:
-        last_layer.set_weights([V, bias])
-    else:
-        last_layer.set_weights([V])
+        new_weight.append(bias)
 
     new_layer = [first_layer, last_layer]
-
-    return new_layer
+    return new_layer, new_weight

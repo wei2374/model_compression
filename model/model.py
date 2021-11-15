@@ -1,9 +1,9 @@
 from numpy.lib.arraysetops import isin
-from decompose import model_decompose, insert_layer_nonseq
+from decompose import model_decompose
 from pruning import model_prune
-from tools.hardware.tflite_inference import run_tflite
-from tools.hardware.tvm_get_model import RPC_Auto_TVM, open_RPC
-from tools.hardware.tvm_inference import run_tvm
+# from tools.hardware.tflite_inference import run_tflite
+# from tools.hardware.tvm_get_model import RPC_Auto_TVM, open_RPC
+# from tools.hardware.tvm_inference import run_tvm
 from model_training.training import train_model, validate_model
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 from tools.visualization.model_visualization import model_cmp_flops_plot
@@ -14,23 +14,33 @@ from .logger import Logger
 
 
 class CompressModel:
-    def __init__(
-                self,
+    def __init__(self,
                 original_model,
                 dataset,
                 preprocessing):
         self.original_model = tf.keras.models.load_model(original_model)
         self.dataset = dataset
         self.preprocessing = preprocessing
+        # make folder for logging
         path = os.getcwd()
-        self.foldername = path+f'/output/{time.time()}'
+        self.foldername = os.path.join(path, f'/output/{time.time()}')
         os.makedirs(self.foldername)
+        # log the basic information of original model
         self.logger = Logger(self.foldername)
         self.logger.writeln("Information of original model")
-        # self.evaluate(self.original_model)
+        self.evaluate(self.original_model)
 
 
     def decompose_model(self, decompose_settings):
+        '''
+        Call this function to perform model decomposition based on decompose_settings
+        range : decompose the layer whose id is within this range, -1 means last layer's id
+        schema : decomposition schemes, you can choose from tucker2D, VH, CP, decouple_dp, decouplt_pd,
+                channel_output, channel input, channel output, channel_output_nl
+        rank_selection : rank selection methods, you can choose from VBMF, BayesOpt, VBMF_auto,
+                Param, energy
+        param: if the rank_selection methods is not VBMF_auto or BayesOpt, this parameter need to be given
+        '''
         if decompose_settings["range"][1] == -1:
             decompose_settings["range"][1] = len(self.original_model.layers)
 
@@ -45,8 +55,17 @@ class CompressModel:
             )
         model_cmp_flops_plot(self.original_model, self.compressed_model, self.foldername)
         self.logger.log_decomposition(decompose_settings)
+        self.evaluate(self.compressed_model)
+
 
     def prune_model(self, pruning_settings):
+        '''
+        Call this function to perform channel pruning based on pruning_settings
+        range : decompose the layer whose id is within this range, -1 means last layer's id
+        method : pruning methods, you can choose from layerwise_pruning, lasso_pruning and whole_pruning
+        ratio_est : prune ratio estimation methods, you can choose uniform, energy, VBMF, BayesOpt
+        param : prune ratio estimation methods need this parameter
+        '''
         if pruning_settings["range"][1] == -1:
             pruning_settings["range"][1] = len(self.original_model.layers)
 
@@ -59,8 +78,6 @@ class CompressModel:
                 param=pruning_settings["param"],
                 min_index=pruning_settings["range"][0],
                 max_index=pruning_settings["range"][1],
-                big_kernel_only=pruning_settings["big_kernel_only"],
-                option=pruning_settings["option"],
                 foldername=self.foldername
             )
         # model_cmp_flops_plot(self.original_model, self.compressed_model, self.foldername)
@@ -132,21 +149,29 @@ class CompressModel:
 
 
     def run_tflite_inference(self, server):
+        '''
+        call this function to measure the inference time and accuracy of compressed model
+        with tf lite framework
+        '''
         print("Transfroming the model into .tflite format...")
         self.save_tflite_model()
-        run_tflite(self.tflite_model, server)
+        # run_tflite(self.tflite_model, server)
 
     def run_tvm_inference(self, server):
+        '''
+        call this function to measure the inference time and accuracy of compressed model
+        with TVM framework
+        '''
         print("Transfroming the model into graph format...")
         self.save_tvm_model()
         foldername=self.foldername
         print("Start the auto TVM tuning...")
-        open_RPC(server)
-        RPC_Auto_TVM(
-            self.tvm_model,
-            foldername,
-            hardware="rasp4",
-            device_key="rk3399")
-        files = [foldername+"/deploy_lib.so", foldername+"/deploy_param.params", foldername+"/deploy_graph.json"]
-        run_tvm(files, server)
+        # open_RPC(server)
+        # RPC_Auto_TVM(
+        #     self.tvm_model,
+        #     foldername,
+        #     hardware="rasp4",
+        #     device_key="rk3399")
+        # files = [foldername+"/deploy_lib.so", foldername+"/deploy_param.params", foldername+"/deploy_graph.json"]
+        # run_tvm(files, server)
         

@@ -1,7 +1,6 @@
 import numpy as np
 import tensorly as tl
 import tensorflow as tf
-from tensorflow.keras import models
 from tensorly.decomposition import partial_tucker
 
 
@@ -147,27 +146,18 @@ def from_tensor_to_layers(
     #                 dilation_rate=layer.dilation_rate, use_bias=layer.use_bias,
     #                 activation=layer.activation)
 
-    l_model = models.Sequential()
-    l_model.add(first_layer)
-    l_model.add(core_layer)
-    l_model.add(last_layer)
-    l_model.build()
-
     F = tf.expand_dims(tf.expand_dims(
         first, axis=0, name=None
         ), axis=0, name=None)
-    first_layer.set_weights([F])
+    C = np.transpose(core, [2, 3, 1, 0])
 
     L = tf.expand_dims(tf.expand_dims(
         np.transpose(last), axis=0, name=None
         ), axis=0, name=None)
-
+    new_weights = [F, C, L]
+    
     if layer.use_bias:
-        last_layer.set_weights([L, bias])
-    else:
-        last_layer.set_weights([L])
-
-    core_layer.set_weights([np.transpose(core, [2, 3, 1, 0])])
+        new_weights.append(bias)
+        
     new_layer = [first_layer, core_layer, last_layer]
-
-    return new_layer
+    return new_layer, new_weights

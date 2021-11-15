@@ -6,12 +6,14 @@ import math
 
 def estimate_ranks_param(layer, factor=0.2, schema="tucker2D"):
     '''
-    Param rank estimation
+    Param rank estimation : Select the rank such as certain(factor) percent of FLOPs are left
     Key arguments:
     layer -- layer to be decomposed
     factor -- how many FLOPS in convolutional layer left
+    schema -- decomposition schema
+
     Return:
-    max_rank -- ranks estimated
+    ranks estimated
     '''
 
     tl.set_backend('tensorflow')
@@ -88,4 +90,5 @@ def estimate_ranks_param(layer, factor=0.2, schema="tucker2D"):
 
         return max_rank
     else:
+        print(f"Rank selection based on Param cannot found corresponding decomposition schema {schema}")
         raise NotImplementedError

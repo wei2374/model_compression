@@ -3,25 +3,6 @@ from .mnist import GetData
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
-class DataLoader:
-    '''
-    This class deals with all functions related with getting data
-    '''
-    def __init__(self, dataset, batch_size, val_split, small_part, preprocessing):
-        self.train_data, self.valid_data = get_food101_data(
-                dataset_dir=dataset,
-                bs=batch_size,
-                preprocessing=preprocessing,
-                validation_split=val_split,
-                small_part=small_part)
-
-    def get_all_data(self):
-        return self.train_data, self.valid_data
-
-    def get_valid_data(self):
-        return self.valid_data
-
-
 def get_data_from_dataset(
             dataset,
             batch_size=16,
@@ -33,18 +14,9 @@ def get_data_from_dataset(
     Call this function to get training data and validation data
     for model training
     '''
-    dataset_dir = "/home/wei-bshg/Documents/datasets/"
-    if dataset == "food101":
+    if 'food_20' in dataset or 'food_101' in dataset:
         train_data, valid_data = get_food101_data(
-                dataset_dir=dataset_dir+"food-101",
-                bs=batch_size,
-                preprocessing=preprocessing,
-                validation_split=validation_split,
-                small_part=small_part)
-
-    if dataset == "food20":
-        train_data, valid_data = get_food101_data(
-                dataset_dir=dataset_dir+"food-20",
+                dataset_dir=dataset,
                 bs=batch_size,
                 preprocessing=preprocessing,
                 validation_split=validation_split,

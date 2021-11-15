@@ -34,50 +34,50 @@ def decompose_conv2d_layer(
     layers = [original_model.layers[index]]
 
     if schema == "tucker2D":
-        new_layers = tucker_decomposition_conv_layer(
+        new_layers, new_weights = tucker_decomposition_conv_layer(
                         layers,
                         rank=rank
                         )
     elif schema == "CP":
-        new_layers = cp_decomposition_conv_layer(
+        new_layers, new_weights = cp_decomposition_conv_layer(
                         layers,
                         rank=rank,
                         )
     elif schema == "VH":
-        new_layers = VH_decomposition_conv_layer(
+        new_layers, new_weights = VH_decomposition_conv_layer(
                         layers,
                         rank=rank
                         )
     elif schema == "channel_all":
-        new_layers = channel_decomposition_all_conv_layer(
+        new_layers, new_weights = channel_decomposition_all_conv_layer(
                         layers,
                         ranks=rank,
                         )
     elif schema == "channel_output":
-        new_layers = output_channel_decomposition_conv_layer(
+        new_layers, new_weights = output_channel_decomposition_conv_layer(
                         layers,
                         rank=rank,
                         )
     elif schema == "channel_input":
-        new_layers = input_channel_decomposition_conv_layer(
+        new_layers, new_weights = input_channel_decomposition_conv_layer(
                         layers,
                         rank=rank,
                         )
     elif schema == "channel_nl":
-        new_layers = channel_decomposition_nl_conv_layer(
+        new_layers, new_weights = channel_decomposition_nl_conv_layer(
                         original_model,
                         index,
                         layers,
                         rank=rank,
                         )
     elif schema == "depthwise_pd":
-        new_layers = network_decouple_conv_layer_pd(
+        new_layers, new_weights = network_decouple_conv_layer_pd(
                         layers,
                         param=param,
                         rank=rank,
                         )
     elif schema == "depthwise_dp":
-        new_layers = network_decouple_conv_layer_dp(
+        new_layers, new_weights = network_decouple_conv_layer_dp(
                         layers,
                         param=param,
                         rank=rank,
@@ -85,5 +85,6 @@ def decompose_conv2d_layer(
     # TODO:: add support for TT decomposition
     # elif method == "TT":
     else:
+        print(f"Decomposition schema {schema} is not implemented yet")
         raise NotImplementedError
-    return new_layers
+    return new_layers, new_weights

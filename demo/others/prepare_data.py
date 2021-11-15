@@ -1,6 +1,9 @@
-import os
+import sys, os
+p = os.path.abspath('.')
+sys.path.insert(1, p)
 from shutil import copy
 import collections
+from demo import dataset_dir
 
 # Helper method to split dataset into train and test folders
 def prepare_data(filepath, src, dest):
@@ -14,17 +17,18 @@ def prepare_data(filepath, src, dest):
   for food in classes_images.keys():
     print("\nCopying images into ",food)
     if not os.path.exists(os.path.join(dest,food)):
-      os.makedirs(os.path.join(dest,food))
+      if os.path.exists(os.path.join(src,food)):
+        os.makedirs(os.path.join(dest,food))
     for i in classes_images[food]:
-      copy(os.path.join(src,food,i), os.path.join(dest,food,i))
+      if os.path.exists(os.path.join(src,food)):
+        copy(os.path.join(src,food,i), os.path.join(dest,food,i))
   print("Copying Done!")
 
-model_dir = "/home/wei-bshg/Documents/datasets/food-101"
-# Creating train and test data
-prepare_data(model_dir+'/meta/train.txt', 
-             model_dir+'/images', 
-             model_dir+'train')
 
-prepare_data(model_dir+'/meta/test.txt', 
-             model_dir+'/images', 
-             model_dir+'test')            
+prepare_data(dataset_dir+'/meta/train.txt', 
+             dataset_dir+'/images', 
+             dataset_dir+'train')
+
+prepare_data(dataset_dir+'/meta/test.txt', 
+             dataset_dir+'/images', 
+             dataset_dir+'test')            

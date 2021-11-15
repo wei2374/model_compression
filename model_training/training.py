@@ -1,12 +1,12 @@
 from tools.visualization.training_visualization_tool import plot_training_result
 import tensorflow as tf
-from torch.functional import Tensor
 from dataset.load_datasets import get_data_from_dataset
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.callbacks import ModelCheckpoint, CSVLogger
 from .cyclic import CyclicLR
 import numpy as np
 from keras_flops import get_flops
+import os
 
 
 def validate_model(
@@ -26,12 +26,6 @@ def validate_model(
                 validation_split=split,
                 preprocessing=preprocessing,
                 small_part=1)
-
-    # X_train, y_train = next(train_data)
-    # for i in range(3):
-    #     img, label = next(train_data)
-    #     X_train = np.append(X_train, img, axis=0)
-    #     y_train = np.append(y_train, label, axis=0)
 
     acc1 = tf.keras.metrics.TopKCategoricalAccuracy(
         k=1, name="top1", dtype=None)
@@ -60,6 +54,7 @@ def train_model(
         method,
         dataset,
         foldername,
+        model_name='fine_tuned_model.h',
         train_data=None,
         valid_data=None,
         bs=16,
@@ -68,8 +63,8 @@ def train_model(
         small_part=0.1,
         validation_freq=1):
 
-    csv_path = foldername+'/logfile.log'
-    model_path = foldername+"/compressed_model.h5"
+    csv_path = os.path.join(foldername, 'logfile.log')
+    model_path = os.path.join(foldername, model_name)
 
     if method == "cycling":
         train_data, valid_data = [train_data, valid_data]
@@ -87,7 +82,9 @@ def train_model(
 
         initial_learning_rate = 1e-5
         maximal_learning_rate = 1e-3
-        step_size = 3000 #train_data.n/2
+        NUM_CLR_CYCLES = 3
+        step_size = train_data.n/NUM_CLR_CYCLES/2
+
         opt = SGD(lr=initial_learning_rate, momentum=0.9)
         clr = CyclicLR(
             base_lr=initial_learning_rate,
@@ -120,8 +117,9 @@ def train_model(
                         callbacks=[csv_logger, checkpointer, clr, early_stopper])
 
         plot_training_result(history, clr, foldername)
+        raw_model.save(os.path.join(foldername, "trained_model.h5"))
 
-    elif method == "adam":
+    elif method == "sgd":
         train_data, valid_data = [train_data, valid_data]
 
         if train_data is None:
@@ -144,17 +142,17 @@ def train_model(
                         save_best_only=True)
 
         with tf.device('/gpu:0'):
-            raw_model.compile(
-                optimizer='adam',
-                loss=tf.keras.losses.categorical_crossentropy,
+            raw_model.compile(optimizer=SGD(learning_rate=0.0001, momentum=0.9), 
+                loss='categorical_crossentropy', 
                 metrics=[acc1, acc5])
             history = raw_model.fit_generator(
                         train_data,
-                        epochs=10,
+                        epochs=30,
                         validation_data=valid_data,
                         verbose=1,
                         callbacks=[checkpointer])
             plot_training_result(history, None, foldername)
+        raw_model.save(os.path.join(foldername, "trained_model.h5"))
 
     elif method == "default":
         train_data, valid_data = [train_data, valid_data]
@@ -215,5 +213,6 @@ def train_model(
                 verbose=1,
                 callbacks=[checkpointer])
         plot_training_result(history, None, foldername)
+        raw_model.save(os.path.join(foldername, "trained_model.h5"))
 
     return history, train_data, valid_data

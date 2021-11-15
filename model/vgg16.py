@@ -9,7 +9,6 @@ def VGG16(
         input_shape,
         num_classes,
         models_filename=None,
-        lr=1e-3,
         bn=False,
         s=0.0001):
 

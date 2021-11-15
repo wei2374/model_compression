@@ -92,29 +92,17 @@ def from_tensor_to_layers(
                     dilation_rate=layer.dilation_rate,
                     activation=layer.activation,
                     use_bias=(i == 0 and layer.use_bias)))
-
-    input_data = tf.keras.layers.Input(shape=layer.input_shape[1:])
-    ys = []
+    
+    new_weight_p = []
+    new_weight_d = []
     for i in range(item_number):
-        y = p_layers[i](input_data)
-        y = d_layers[i](y)
-        ys.append(y)
-    if(len(ys) > 1):
-        added = tf.keras.layers.Add()(ys)
-    else:
-        added = ys[0]
-    model = tf.keras.models.Model(inputs=input_data, outputs=added)
-    model.build(input_shape=layer.input_shape[1:])
-    x = p_layers[i].get_weights()
-    z = d_layers[i].get_weights()
-
-    for i in range(item_number):
-        p_layers[i].set_weights([np.transpose(pw[i], [2, 3, 1, 0])])
+        new_weight_p.append(np.transpose(pw[i], [2, 3, 1, 0]))
         if i == 0:
             if layer.use_bias:
-                d_layers[i].set_weights([np.transpose(dw[i], [2, 3, 0, 1]), bias])
+                new_weight_d.append(np.transpose(dw[i], [2, 3, 0, 1]))
+                new_weight_d.append(bias)
             else:
-                d_layers[i].set_weights([np.transpose(dw[i], [2, 3, 0, 1])])
+                new_weight_d.append(np.transpose(dw[i], [2, 3, 0, 1]))
         else:
-            d_layers[i].set_weights([np.transpose(dw[i], [2, 3, 0, 1])])
-    return [p_layers, d_layers]
+            new_weight_d.append(np.transpose(dw[i], [2, 3, 0, 1]))
+    return [p_layers, d_layers], [new_weight_p, new_weight_d]

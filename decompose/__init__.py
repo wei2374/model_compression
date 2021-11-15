@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.models import Model
-from decompose.decompose_schemes.decomposition_methods import decompose_conv2d_layer
-from decompose.rank_estimation.rank_estimator import estimate_rank
+from decompose.decompose_schemes import decompose_conv2d_layer
+from decompose.rank_estimation import estimate_rank
 from tools.visualization.decompose_visualization_tool import plot_rank_percentage
 from tools.progress.bar import Bar
 from tools.visualization.model_visualization import plot_model_decompose
@@ -40,6 +40,7 @@ def decompose_layers(
 
     kernel_limit = 1 if big_kernel_only else 0
     new_layers = {}
+    new_weights = {}
     layer_rank = {}
     layer_ranks_all = {}
     target_layers = {}
@@ -64,12 +65,13 @@ def decompose_layers(
             layer_rank[index] = rank
             layer_ranks_all[index] = [input_channels, output_channels, rank[0], rank[1]]
             bar.next((100/layer_num))
-    plot_rank_percentage(layer_ranks_all, rank_selection, foldername)
+    if foldername is not None:
+        plot_rank_percentage(layer_ranks_all, rank_selection, foldername)
 
     # decompose layers
     with Bar(f'Model being decomposed with {schema} decomposition ...') as bar:
         for index in target_layers:
-            new_layers[index] = decompose_conv2d_layer(
+            new_layers[index], new_weights[index] = decompose_conv2d_layer(
                             original_model,
                             index,
                             rank=layer_rank[index],
@@ -77,8 +79,7 @@ def decompose_layers(
                             schema=schema
                             )
             bar.next((100/layer_num))
-
-    return new_layers
+    return new_layers, new_weights
 
 
 def insert_layer_nonseq(
@@ -144,11 +145,20 @@ def insert_layer_nonseq(
                     raise ValueError('position must be: before, after or replace')
                 if method == "depthwise_pd":
                     [p_layers, d_layers] = insert_layer_factory[layer_regex]
+                    [new_weights_p, new_weights_d] = weight_map[layer_regex]
                     item_number = len(p_layers)
                     ys = []
+                    c = 0
                     for i in range(item_number):
                         y = p_layers[i](x)
                         y = d_layers[i](y)
+                        p_layers[i].set_weights([new_weights_p[i]])
+                        if d_layers[i].use_bias:
+                            d_layers[i].set_weights([new_weights_d[c], new_weights_d[c+1]])
+                            c+=1
+                        else:
+                            d_layers[i].set_weights([new_weights_d[c]])
+                        c+=1
                         ys.append(y)
                     if item_number > 1:
                         x = tf.keras.layers.Add()(ys)
@@ -156,11 +166,20 @@ def insert_layer_nonseq(
                         x = ys[0]
                 elif method == "depthwise_dp":
                     [p_layers, d_layers] = insert_layer_factory[layer_regex]
+                    [new_weights_p, new_weights_d] = weight_map[layer_regex]
                     item_number = len(p_layers)
                     ys = []
+                    c = 0
                     for i in range(item_number):
                         y = d_layers[i](x)
                         y = p_layers[i](y)
+                        d_layers[i].set_weights([new_weights_d[i]])
+                        if p_layers[i].use_bias:
+                            p_layers[i].set_weights([new_weights_p[c], new_weights_p[c+1]])
+                            c+=1
+                        else:
+                            p_layers[i].set_weights([new_weights_p[c]])
+                        c+=1
                         ys.append(y)
                     if item_number > 1:
                         x = tf.keras.layers.Add()(ys)
@@ -170,18 +189,19 @@ def insert_layer_nonseq(
                     new_layers = insert_layer_factory[layer_regex]
                     for index, _layer in enumerate(new_layers):
                         x = _layer(x)
-                        if weight_map is not None:
-                            if index != len(new_layers)-1:
-                                _layer.set_weights([weight_map[layer_regex][index]])
+                        if index != len(new_layers)-1:
+                            _layer.set_weights([weight_map[layer_regex][index]])
+                        else:
+                            if _layer.use_bias:
+                                _layer.set_weights([weight_map[layer_regex][index], weight_map[layer_regex][index+1]])
                             else:
-                                if _layer.use_bias:
-                                    _layer.set_weights([weight_map[layer_regex][index], weight_map[layer_regex][index+1]])
-                                else:
-                                    _layer.set_weights([weight_map[layer_regex][index]])
+                                _layer.set_weights([weight_map[layer_regex][index]])
                 break
 
         if match_flag == 0:
+            layer._inbound_nodes = []
             x = layer(layer_input)
+            layer._outbound_nodes = []
 
         # Set new output tensor (the original one, or the one of the inserted
         # layer)
@@ -196,9 +216,9 @@ def insert_layer_nonseq(
 
 def model_decompose(
         raw_model,
-        foldername,
         schema,
         rank_selection,
+        foldername=None,
         option="CL",
         min_index=1,
         max_index=1,
@@ -224,8 +244,9 @@ def model_decompose(
 
     Return:
     new_layers -- decomposed layers in a dictionary format
-    '''    
-    new_layers = decompose_layers(
+    '''
+    # Decompose layers and return the decomposed result into new_layers  
+    new_layers, new_weights = decompose_layers(
             raw_model,
             foldername,
             schema=schema,
@@ -236,13 +257,15 @@ def model_decompose(
             big_kernel_only=big_kernel_only,
             option=option
     )
-
+    # Modify the model with decomposed new layers
     modified_model = insert_layer_nonseq(
                 raw_model,
                 new_layers.keys(),
                 new_layers,
+                weight_map=new_weights,
                 method=schema,
     )
-    plot_model_decompose(modified_model, foldername)
+    if foldername is not None:
+        plot_model_decompose(modified_model, foldername)
 
     return modified_model

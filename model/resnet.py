@@ -17,7 +17,7 @@ def ResNet(
     x = Dense(128,activation='relu')(x)
     x = Dropout(0.2)(x)
 
-    predictions = Dense(101,
+    predictions = Dense(num_classes,
                         kernel_regularizer=l2(0.005), 
                         activation='softmax')(x)
 
