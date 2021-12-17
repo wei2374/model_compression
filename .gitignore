@@ -45,16 +45,12 @@
 # Kernel Module Compile Results
 *.mod*
 *.cmd
+*__pycache__/
+*tmp/
 .tmp_versions/
 token.txt
 .vscode/
-__pycache__/
-tests/
-hardware/
-images/
-documents
-/demo/output/
-/output/
+
 modules.order
 Module.symvers
 Mkfile.old

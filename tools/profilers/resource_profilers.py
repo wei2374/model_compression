@@ -7,7 +7,7 @@ import json
 from keras_preprocessing.image import img_to_array
 from tensorflow.keras.applications.vgg19 import preprocess_input
 from tensorflow.keras.preprocessing import image
-from dataset.food101 import get_food101_data
+from demo.food20.food101 import get_food101_data
 tf.compat.v1.disable_eager_execution()
 
 img_path = '/home/wei-bshg/Documents/code/tf_with_dec/profilers/images/cat.thumb'
