@@ -4,10 +4,12 @@ import configparser
 from keras_flops import get_flops
 import numpy as np
 import tensorflow as tf
-
+from core.CompressStrategy import CompressStrategy
+from core.strategies.LayerPruning import LayerPruning
 
 class Task(ABC):
     def __init__(self, cfg):
+        self.strategy = LayerPruning()
         self.config = configparser.ConfigParser()
         p = os.path.abspath('.')
         config_path = os.path.join(p, cfg)
@@ -45,3 +47,10 @@ class Task(ABC):
                 np.sum([count_params(p) for p in model.non_trainable_weights]))
 
         return history[1:], flops, params
+
+
+    def compress(self, model):
+        compressed_model = self.strategy.run(model, self.config)
+        return compressed_model
+        # from compression_tools.pruning.helper_functions import load_model_param
+        # _, _, _, _, layer_index_dic = load_model_param(model)

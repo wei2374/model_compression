@@ -43,6 +43,8 @@ def find_conv2D_index_before(layer, layer_index_dic):
         return conv2D_index
 
 
+# def map_conv_to_act(conv2d_layer, layer_index_dic):
+
 def map_act_to_conv(activation_layers, crits_act, layer_index_dic):
     crits = {}
     for act_layer_index in activation_layers:

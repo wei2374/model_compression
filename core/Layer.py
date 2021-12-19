@@ -1,80 +1,81 @@
 from abc import ABC, abstractmethod
-from tensorflow.python.keras.layers.convolutional import Conv
-from compression_tools.pruning.helper_functions import get_layer_index
-from tensorflow.keras.layers import Flatten, Dense, AveragePooling2D, Conv2D, DepthwiseConv2D,\
-    BatchNormalization, Activation, ZeroPadding2D, Add
-        
+from core.engines.TFEngine import TFEngine
 
 class Layer(ABC):
-    def __init__(self, layer, dic, soft_prune=False):
-        self.index = get_layer_index(dic, layer)
-        self.layer = layer
-        self.prunable = False
+    def __init__(self, raw_layer, soft_prune=False, engine=TFEngine()):
+        self.engine = engine
+        self.raw_layer = raw_layer
         self.soft_prune = soft_prune
-        self.dic = dic
 
-    def active_prune(self, filter, model_params):
+    def get_index(self, dic):
+        for index, layer in dic.items():
+            if layer == self.raw_layer:
+                return index
+
+    def active_prune(self, filter, model_params, layer_index_dic):
         """Call this method to adjust weights of current layer"""
         return
 
-    def passive_prune(self, filter, model_params):
+    def passive_prune(self, filter, model_params, layer_index_dic):
         """Call this method to be adjusted"""
         return
 
-    def propagate(self, filter, model_params):
+    def propagate(self, filter, model_params, layer_index_dic):
         """Call this method to propagate and adjust weights of other layers"""
         return
 
-    def pass_through(self, filter, model_params):
-        return
+    def prune_forward(self, filter, model_params, next_layers, layer_index_dic):
+        while(len(next_layers)==1 and\
+            any([next_layers[0].is_type( _layer) for _layer in self.THROUGH_LAYERS])):
+            for layer_type in self.THROUGH_LAYERS:
+                if next_layers[0].is_type(layer_type):
+                    through_layer = self.THROUGH_LAYERS.get(layer_type)(next_layers[0].raw_layer)
+                    through_layer.passive_prune(filter, model_params, layer_index_dic)
+                    next_layers = [through_layer]
+                    break
+            next_layers = next_layers[0].get_next_layers()
+        return next_layers
+
+
+    def pass_forward(self, next_layers):
+        while(len(next_layers)==1 and\
+            any([next_layers[0].is_type( _layer_type) for _layer_type in self.THROUGH_LAYERS])):
+            next_layers = next_layers[0].get_next_layers()
+        return next_layers
+
+
+    def pass_back(self, prev_layers):
+        while(len(prev_layers)==1 and\
+            not prev_layers[0].is_branch() and\
+            any([prev_layers[0].is_type( _layer_type) for _layer_type in self.THROUGH_LAYERS])):
+            prev_layers = prev_layers[0].get_previous_layers()
+        return prev_layers
+
 
     def get_previous_layers(self):
+        raw_layers = self.engine.get_prev_layers(self.raw_layer)
         layers = []
-        for node in self.layer.inbound_nodes:
-            if(isinstance(node.inbound_layers, list)):
-                for _layer in node.inbound_layers:
-                    layers.append(self.wrap(_layer))
-            else:
-                layers.append(self.wrap(node.inbound_layers))
-
+        for layer in raw_layers:
+            layers.append(self.wrap(layer))
         return layers
 
 
     def get_next_layers(self):
+        raw_layers = self.engine.get_next_layers(self.raw_layer)
         layers = []
-        for node in self.layer.outbound_nodes:
-            if(isinstance(node.outbound_layer, list)):
-                for _layer in node.outbound_layer:
-                    layers.append(self.wrap(_layer))
-                    
-            else:
-                layers.append(self.wrap(node.outbound_layer))
-                    
+        for layer in raw_layers:
+            layers.append(self.wrap(layer))
         return layers
 
+
+    def wrap(self, raw_layer):
+        return self.engine.wrap(raw_layer)(raw_layer)
+
+    def is_type(self, type):
+        return self.engine.is_type(self, type)
+
+    def is_merge(self):
+        return self.engine.is_merge(self)
+    
     def is_branch(self):
-        return self.get_next_layers()>1
-
-    def wrap(self, layer):
-        from core.layers.BNLayer import BNLayer
-        from core.layers.Conv2DLayer import Conv2DLayer
-        from core.layers.DepthwiseLayer import DepthwiseLayer
-        from core.layers.DenseLayer import DenseLayer
-        from core.layers.FlattenLayer import FlattenLayer
-        
-        
-        LAYER_MAPPING={
-                    BatchNormalization: BNLayer,
-                    Conv2D: Conv2DLayer,
-                    DepthwiseConv2D: DepthwiseLayer,
-                    Dense: DenseLayer,
-                    Flatten: FlattenLayer
-                }
-
-        if(any([isinstance(layer, layer_type) for layer_type in LAYER_MAPPING])):
-            for layer_type in LAYER_MAPPING:
-                if(isinstance(layer, layer_type)):
-                    layer_cons = LAYER_MAPPING.get(layer_type)
-                    return layer_cons(layer, self.dic)
-        else:
-            return Layer(layer, self.dic)
+        return self.engine.is_branch(self)

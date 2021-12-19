@@ -3,9 +3,9 @@ import numpy as np
 
 
 class FlattenLayer(Layer):
-    def passive_prune(self, filter, model_params):
-        flatten_layer = Layer(self.layer, self.dic)
-        layer_output = self.dic[flatten_layer.index-1]
+    def passive_prune(self, filter, model_params, layer_index_dic):
+        layer_id = self.get_index(layer_index_dic)
+        layer_output = layer_index_dic[layer_id-1]
         layer_output_shape = layer_output.output_shape
         shape = (layer_output_shape[1]*layer_output_shape[2])
         filters = []

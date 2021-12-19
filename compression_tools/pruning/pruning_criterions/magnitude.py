@@ -14,9 +14,6 @@ def get_and_plot_weights(model):
     with Bar(f'Channel importance estimation based on magnitude of weights...') as bar:
         for index in target_layers:
             layer_weights = np.asarray(target_layers[index].get_weights()[0])
-            # next_layer = layer.outbound_nodes[0].layer
-            # next_layer = next_layer.outbound_nodes[0].layer
-            # if isinstance(next_layer, tf.keras.layers.ReLU):
             channels = layer_weights.shape[3]
             channel_weights = layer_weights.transpose(3, 0, 1, 2).reshape(channels, -1)
             channel_weights_abs_av = np.average(np.abs(channel_weights), axis=1)

@@ -22,12 +22,12 @@ def get_and_plot_gradients2(model, get_dataset=None, PLOT=False):
 
     
     with Bar(f'Channel importance estimation based on second-order gradient...') as bar:
+        crits = {}
         for b in range(batches_n):
             if isinstance(train_data, tf.data.Dataset):
                 batch = next(iter(train_data))
             else:
                 batch = next(train_data)
-            crits = {}
             if batch[1].ndim==1:
                 loss_fun = "tf.metrics.sparse_categorical_crossentropy(batch[1], pred)"
             else:
@@ -45,7 +45,7 @@ def get_and_plot_gradients2(model, get_dataset=None, PLOT=False):
                         Tensor_data = Input
                         pred = model(Tensor_data)
                         ###########################################
-                        loss = loss_fun()
+                        loss = eval(loss_fun)
                     grad1 = tt.gradient(loss, model.layers[conv_index].weights[0])
                 grad[conv_index] = t.gradient(grad1, model.layers[conv_index].weights[0])
 

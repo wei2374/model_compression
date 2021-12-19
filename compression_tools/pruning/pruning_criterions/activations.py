@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 from compression_tools.pruning.helper_functions import map_act_to_conv
 from tools.progress.bar import Bar
-from tools.config import config_parser
 
 
 def get_and_plot_activations(model, layer_index_dic, get_dataset=None):
