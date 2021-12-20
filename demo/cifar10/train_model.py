@@ -8,7 +8,8 @@ from demo.cifar10.Cifar10Task import Cifar10Task
 
 
 task = Cifar10Task('demo/cifar10/config.cfg')
-model = task.prepare_model('trained_model.h5')
+model = task.prepare_model('original_model.h5')
+model.summary()
 compressed_model = task.compress(model)
 
 compressed_model.summary()
