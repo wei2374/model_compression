@@ -96,13 +96,15 @@ class LayerPruning(Strategy):
                            ------M              '''
                         pass
                     
-                    elif any([_layer.is_type(_layer_type) for _layer_type in layer.STOP_LAYERS]) and\
-                         _layer!=layer:
+                    elif len(_layers)==1 and\
+                        any([_layers[0].is_type(_layer_type) for _layer_type in layer.STOP_LAYERS]) and\
+                         _layers[0]!=layer:
                         '''---*S--layer--*T--M
                            ---*S----*T-------  '''
-                        return filters[_layer.get_index(dic)]
+                        return filters[_layers[0].get_index(dic)]
                     
-                    elif _layer.is_branch():
+                    elif len(_layers)==1 and \
+                        _layers[0].is_branch():
                         '''B--*S--layer--*T--M
                             -----*T----------     '''
                         branch_layer = _layer
