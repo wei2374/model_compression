@@ -28,10 +28,10 @@ class TFEngine(Engine):
 
 
     def is_branch(self, layer):
-        return self.get_next_layers(layer)>1
+        return len(self.get_next_layers(layer.raw_layer))>1
 
     def is_merge(self, layer):
-        return self.get_prev_layers(layer)>1
+        return len(self.get_prev_layers(layer.raw_layer))>1
 
     def is_type(self, layer, type):
         return isinstance(layer.raw_layer, type)

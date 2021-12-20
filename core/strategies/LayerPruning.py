@@ -50,8 +50,7 @@ class LayerPruning(Strategy):
 
 
     def get_filter(self, layer, filters, dic):
-        next_layers = layer.get_next_layers()
-        next_layers = layer.pass_forward(next_layers)
+        next_layers = layer.pass_forward()
         
         if(len(next_layers)==0):
             ''' layer--*T       '''
@@ -71,8 +70,7 @@ class LayerPruning(Strategy):
             #TODO::only works for ResNet
             ''' layer--*T--M
                      --*---       '''
-            prev_layers = layer.get_previous_layers()
-            prev_layers = layer.pass_back(prev_layers)
+            prev_layers = layer.pass_back()
             if len(prev_layers)>1:
                 #TODO
                 ''' ---
@@ -107,23 +105,27 @@ class LayerPruning(Strategy):
                     elif _layer.is_branch():
                         '''B--*S--layer--*T--M
                             -----*T----------     '''
-                        brach_layer = _layer
+                        branch_layer = _layer
                         
-                id_prev_layers = brach_layer
-                id_prev_layers = layer.pass_back([id_prev_layers])
+                id_prev_layers = layer.pass_back(branch_layer.get_previous_layers())
                 if len(id_prev_layers)>1:
-                    '''--M-*T--B--*S--layer--*T--M
-                       --       -----*T----------      '''
+                    '''
+                    *---M-*T--B--*S--layer--*T--M
+                    *---       -----*T----------      
+                    '''
                     for prev_layer in id_prev_layers:
-                        if not prev_layer.is_branch():
-                            prev_layers = layer.pass_back(prev_layers)
+                        prev_layers = layer.pass_back([prev_layer])
+                        if len(prev_layers)==1 and\
+                            any([prev_layers[0].is_type( _layer_type) for _layer_type in layer.STOP_LAYERS]):
                             stop_layer = prev_layer[0]
                             return filters[stop_layer.get_index(dic)]
 
 
-                elif any([id_prev_layers[0].is_type( _layer_type) for _layer_type in self.STOP_LAYERS]):
-                    '''S-*T--B--*S--layer--*T--M
-                                -----*T----------      '''
+                elif any([id_prev_layers[0].is_type( _layer_type) for _layer_type in layer.STOP_LAYERS]):
+                    '''
+                    S-*T--B--*S--layer--*T--M
+                           -----*T----------
+                    '''
                     stop_layer = id_prev_layers[0]
                     return filters[stop_layer.get_index(dic)]
                 
@@ -132,16 +134,19 @@ class LayerPruning(Strategy):
     
 
     def propagate(self, layer, filter, model_params, layer_index_dic):
-        next_layers = layer.get_next_layers()
-        next_layers = layer.prune_forward(filter, model_params, next_layers, layer_index_dic) 
+        next_layers = layer.prune_forward(filter, model_params, layer_index_dic) 
         
         if(len(next_layers)==0):
-            '''conv2d--T*'''
+            '''
+            layer--*T
+            '''
             return
 
         elif len(next_layers)==1 and\
              any([next_layers[0].is_type(_layer_type) for _layer_type in layer.STOP_LAYERS]):
-            '''conv2d--T*--S'''
+            '''
+            layer--*T--S
+            '''
             for layer_type in layer.STOP_LAYERS:
                 if next_layers[0].is_type(layer_type):
                     #TODO::forward declare issue
@@ -153,103 +158,116 @@ class LayerPruning(Strategy):
                     return
 
 
-        # elif next_layers[0].is_merge():
-        #     '''
-        #     TODO::now only handles ResNet with 2 branches ahead situation
-        #     *-conv2d-T*--Merge-*
-        #     ----*-------          
-        #     '''
-        #     if(layer.get_previous_layers()[0].is_branch()):
-        #         '''
-        #         B---conv2d-T*--M-*
-        #          ---conv2d-T*--          
-        #         '''
-        #         add_layer = next_layers[0]
-        #         while(True):
-        #             next_layers = add_layer.get_next_layers()
-        #             while(len(next_layers)!=2):
-        #                 '''
-        #                 *--A--*T--*
-        #                 *--      
-        #                 '''
-        #                 next_layers = self.pass_through(filter,model_params, next_layers)
-        #                 if(len(next_layers)==0):
-        #                     return
-
-        #                 if len(next_layers)==1 and any([isinstance(next_layers[0].layer, _layer) for _layer in self.STOP_LAYERS]):
-        #                     '''
-        #                     *--A--*T--S
-        #                     *--      
-        #                     '''
-        #                     for layer_type in self.STOP_LAYERS:
-        #                         if isinstance(next_layers[0].layer, layer_type):
-        #                             if(isinstance( self.STOP_LAYERS.get(layer_type),str)):
-        #                                 stop_layer = Conv2DLayer(next_layers[0].layer, self.dic)
-        #                             else:
-        #                                 stop_layer = self.STOP_LAYERS.get(layer_type)(next_layers[0].layer, self.dic)
-        #                             stop_layer.passive_prune(filter, model_params)
-        #                             return
-                            
-        #                     next_layers = next_layers[0].get_next_layers()
-
-
-        #             for _layer in next_layers:
-        #                 '''
-        #                 *--A----*
-        #                 *--  ---*    
-        #                 '''
-        #                 if isinstance(_layer, Conv2DLayer):
-        #                     _layer.passive_prune(filter, model_params)
-        #                 elif isinstance(_layer.layer, Add):
-        #                     add_layer = _layer
-
-        #             if(all([isinstance(_layer, Conv2DLayer) for _layer in next_layers])):
-        #                 return
+        elif next_layers[0].is_merge():
+            '''
+            TODO::now only handles ResNet with 2 branches ahead situation
+            *-layer--*T--M-*
+              ----*------          
+            '''
+            merge_layer = next_layers[0]
+            prev_layers = layer.pass_back()
+            if len(prev_layers)==1 and prev_layers[0].is_branch():
+                '''
+                --*--B-*T-layer-*T--M-*
+                      ---*----------          
+                '''
+                while(True):
+                    next_layers = layer.prune_forward(filter, model_params, layer_index_dic, merge_layer.get_next_layers())
+                    if(len(next_layers)==0):
+                        '''
+                        --*--B-*T-layer-*T--M-*T
+                            ---*----------          
+                        '''
+                        return
+                    elif(len(next_layers)==1 and\
+                        any([next_layers[0].is_type(_layer_type) for _layer_type in layer.STOP_LAYERS])):
+                        '''
+                        --*--B-*T-layer-*T--M-*T-S
+                            ---*----------          
+                        '''
+                        for layer_type in layer.STOP_LAYERS:
+                            if next_layers[0].is_type(layer_type):
+                                if(isinstance(layer.STOP_LAYERS.get(layer_type), str)):
+                                    stop_layer = Conv2DLayer(next_layers[0].raw_layer)
+                                else:
+                                    stop_layer = layer.STOP_LAYERS.get(layer_type)(next_layers[0].raw_layer)
+                                stop_layer.passive_prune(filter, model_params, layer_index_dic)
+                                return
+                    else:
+                        '''
+                        --*--B-*T-layer-*T--M-*T-B--*
+                            ---*---------         --* 
+                        '''
+                        old_merge_layer = merge_layer
+                        for next_layer in next_layers:
+                            _next_layers = layer.prune_forward(filter, model_params, layer_index_dic, [next_layer])
+                            if len(_next_layers)==1 and\
+                               any([_next_layers[0].is_type(_layer_type) for _layer_type in layer.STOP_LAYERS]):
+                               for layer_type in layer.STOP_LAYERS:
+                                    if _next_layers[0].is_type(layer_type):
+                                        if(isinstance(layer.STOP_LAYERS.get(layer_type), str)):
+                                            stop_layer = Conv2DLayer(_next_layers[0].raw_layer)
+                                        else:
+                                            stop_layer = layer.STOP_LAYERS.get(layer_type)(_next_layers[0].raw_layer)
+                                        stop_layer.passive_prune(filter, model_params, layer_index_dic)
                         
-        #     else:
-        #         '''
-        #         *-conv2d-T*--A-*
-        #         -----------          
-        #         '''
+                            elif len(_next_layers)==1 and\
+                                _next_layers[0].is_merge():
+                                merge_layer = _next_layers[0]
 
-        #         pass
+                    if(merge_layer==old_merge_layer):
+                        return
+            else:
+                '''
+                --*--S-*T-layer-*T--M-*
+                -----------*---------          
+                '''
+
+                pass
         
 
-        # elif(len(next_layers)>1):
-        #     '''
-        #     TODO::now only handles ResNet with 2 branches ahead situation
-        #     conv2d --B----
-        #               ----
-        #     '''
-        #     while(True):
-        #         while len(next_layers)!=2:
-        #             next_layers = self.pass_through(filter, model_params, next_layers)
-        #             if len(next_layers)==1:
-        #                 next_layers = next_layers[0].get_next_layers()
+        elif(len(next_layers)>1):
+            '''
+            TODO::now only handles ResNet with 2 branches ahead situation
+            layer-*T--B--*
+                       --*
+            '''
+            while(True):
+                while len(next_layers)==1:
+                    next_layers = layer.prune_forward(filter, model_params, next_layers, next_layers[0].get_next_layers())
                 
-        #         _next_layers = next_layers
-        #         for _layer in next_layers:
-        #             _layer = self.pass_through(filter, model_params, [_layer])[0]
-        #             if isinstance(_layer, Conv2DLayer):
-        #                 '''
-        #                 ---B-T*-Conv2D-*-Add
-        #                     -----*-----
-        #                 '''
-        #                 _layer.passive_prune(filter, model_params)
+                _next_layers = next_layers
+                old_next_layer = next_layers
+                for _layer in next_layers:
+                    _layer = layer.prune_forward(filter, model_params, layer_index_dic, [_layer])
+                    if len(_layer)==1 and\
+                        any([_layer[0].is_type(_layer_type) for _layer_type in layer.STOP_LAYERS]):
+                        '''
+                        layer-*T--B--*T--S
+                                   --*----
+                        '''
+                        for layer_type in layer.STOP_LAYERS:
+                            if _layer[0].is_type(layer_type):
+                                if(isinstance(layer.STOP_LAYERS.get(layer_type), str)):
+                                    stop_layer = Conv2DLayer(_layer[0].raw_layer)
+                                else:
+                                    stop_layer = layer.STOP_LAYERS.get(layer_type)(_layer[0].raw_layer)
+                                stop_layer.passive_prune(filter, model_params, layer_index_dic)
 
-        #             elif isinstance(_layer.layer, Add):
-        #                 '''
-        #                 ---B----T*----Add
-        #                     ---------
-        #                 '''
-        #                 next_layers = [_layer]
+                    elif len(_layer)==1 and\
+                        _layer[0].is_merge():
+                        '''
+                        layer-*T--B--*T--M
+                                   --*--
+                        '''
+                        next_layers = _layer
                 
-        #         if(all([isinstance(_layer, Conv2DLayer) for _layer in _next_layers])):
-        #             '''
-        #             ---B-T*-Conv2D-*-Add
-        #                 -T*-Conv2D-*-
-        #             '''
-        #             return
+                if(old_next_layer==next_layers):
+                    '''
+                        layer-*T--B--*T-S
+                                   --*T-S
+                    '''
+                    return
 
 
     def build_pruned_model(self, original_model, new_model_param, layer_types):

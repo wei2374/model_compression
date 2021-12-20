@@ -24,7 +24,9 @@ class Layer(ABC):
         """Call this method to propagate and adjust weights of other layers"""
         return
 
-    def prune_forward(self, filter, model_params, next_layers, layer_index_dic):
+    def prune_forward(self, filter, model_params, layer_index_dic, next_layers=None):
+        if next_layers==None:
+            next_layers = self.get_next_layers()
         while(len(next_layers)==1 and\
             any([next_layers[0].is_type( _layer) for _layer in self.THROUGH_LAYERS])):
             for layer_type in self.THROUGH_LAYERS:
@@ -37,14 +39,18 @@ class Layer(ABC):
         return next_layers
 
 
-    def pass_forward(self, next_layers):
+    def pass_forward(self, next_layers=None):
+        if next_layers==None:
+            next_layers = self.get_next_layers()
         while(len(next_layers)==1 and\
             any([next_layers[0].is_type( _layer_type) for _layer_type in self.THROUGH_LAYERS])):
             next_layers = next_layers[0].get_next_layers()
         return next_layers
 
 
-    def pass_back(self, prev_layers):
+    def pass_back(self, prev_layers=None):
+        if prev_layers == None:
+            prev_layers = self.get_previous_layers()
         while(len(prev_layers)==1 and\
             not prev_layers[0].is_branch() and\
             any([prev_layers[0].is_type( _layer_type) for _layer_type in self.THROUGH_LAYERS])):

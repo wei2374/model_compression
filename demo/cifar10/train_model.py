@@ -9,9 +9,9 @@ from demo.cifar10.Cifar10Task import Cifar10Task
 
 task = Cifar10Task('demo/cifar10/config.cfg')
 model = task.prepare_model('original_model.h5')
-task.compress(model)
+compressed_model = task.compress(model)
 
-# model.summary()
+compressed_model.summary()
 # # task.evaluate(model)
 # from tensorflow.keras.utils import plot_model
 # fig_path = os.path.join(task.config['Model']['model_folder'], 'model.png')
