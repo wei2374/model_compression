@@ -25,8 +25,8 @@ class Food101Task(Task):
                 from resnet import ResNet50
                 model = ResNet50(input_shape=[224, 224, 3], num_classes=20)
             elif type == "mobilenet_v2":
-                from mobilenet_v2 import MobileNetV2
-                model = MobileNetV2(input_shape=[224, 224, 3], num_classes=20)
+                from mobilenet_v2 import MobileNetV2_avg_max
+                model = MobileNetV2_avg_max(input_shape=[224, 224, 3], num_classes=20)
             return model
     
     def get_dataset(self):

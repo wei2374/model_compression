@@ -1,3 +1,4 @@
+from tensorflow.python.keras.layers.advanced_activations import ReLU
 from tensorflow.python.keras.layers.normalization import BatchNormalization
 import numpy as np
 from tensorflow.keras.layers import Flatten, Dense, AveragePooling2D, Conv2D, DepthwiseConv2D,\
@@ -18,6 +19,7 @@ class Conv2DLayer(Layer):
         Flatten: FlattenLayer,
         ZeroPadding2D: Layer,
         Activation: Layer,
+        ReLU: Layer,
         Dropout: Layer,
         AveragePooling2D: Layer,
         GlobalAveragePooling2D: Layer,

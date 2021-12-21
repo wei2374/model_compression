@@ -7,4 +7,5 @@ class DepthwiseLayer(Layer):
         layer_id = self.get_index(layer_index_dic)
         if not self.soft_prune:
             model_params[layer_id][0] = np.delete(model_params[layer_id][0], filter, axis=2)
-            model_params[layer_id][1] = np.delete(model_params[layer_id][1], filter, axis=0)
+            if self.use_bias():
+                model_params[layer_id][1] = np.delete(model_params[layer_id][1], filter, axis=0)

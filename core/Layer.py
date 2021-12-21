@@ -85,3 +85,6 @@ class Layer(ABC):
     
     def is_branch(self):
         return self.engine.is_branch(self)
+    
+    def use_bias(self):
+        return self.engine.use_bias(self)

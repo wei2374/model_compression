@@ -13,6 +13,7 @@ class LayerPruning(Strategy):
     def run(self, model, config):
         engine = TFEngine()
         layer_types, model_params, _, _, layer_index_dic = engine.load_model_param(model)
+        filters = self.param_est(model)
 
         #TODO::depends on config
         for raw_layer in model.layers:
@@ -21,13 +22,13 @@ class LayerPruning(Strategy):
                  not isinstance(raw_layer, tf.keras.layers.DepthwiseConv2D):
                 layer = Layer(raw_layer)
                 layer = layer.wrap(raw_layer)
-                layer.get_index(layer_index_dic)
-                filter = self.param_est(layer, model, layer_index_dic)
+                id = layer.get_index(layer_index_dic)
+                filter = self.get_filter(layer, filters, layer_index_dic)
                 self.prune(layer, filter, model_params, layer_index_dic)
                 self.propagate(layer, filter, model_params, layer_index_dic)
         return self.build_pruned_model(model, model_params, layer_types)
 
-    def param_est(self, layer, model, layer_index_dic):
+    def param_est(self, model):
         from compression_tools.pruning.pruning_criterions.magnitude import get_and_plot_weights
         score = get_and_plot_weights(model)
         #TODO::prune_ratio
@@ -40,8 +41,7 @@ class LayerPruning(Strategy):
             prune_mask = score[sc] <= prun_threshold
             filter = np.where(prune_mask)
             filters[sc]=filter
-        filter = self.get_filter(layer, filters, layer_index_dic)
-        return filter
+        return filters
 
 
     def prune(self, layer, filter, model_params, layer_index_dic):
@@ -236,6 +236,14 @@ class LayerPruning(Strategy):
             '''
             while(True):
                 while len(next_layers)==1:
+                    if any([next_layers[0].is_type(_layer_type) for _layer_type in layer.STOP_LAYERS]):
+                        '''
+                        layer-*T--B--*T--M--*T--*S
+                                   --*---
+                        '''
+                        next_layers[0].passive_prune(filter, model_params, layer_index_dic)
+                        return
+
                     next_layers = layer.prune_forward(filter, model_params, next_layers, next_layers[0].get_next_layers())
                 
                 _next_layers = next_layers
@@ -250,11 +258,11 @@ class LayerPruning(Strategy):
                         '''
                         for layer_type in layer.STOP_LAYERS:
                             if _layer[0].is_type(layer_type):
-                                if(isinstance(layer.STOP_LAYERS.get(layer_type), str)):
-                                    stop_layer = Conv2DLayer(_layer[0].raw_layer)
-                                else:
-                                    stop_layer = layer.STOP_LAYERS.get(layer_type)(_layer[0].raw_layer)
-                                stop_layer.passive_prune(filter, model_params, layer_index_dic)
+                                # if(isinstance(layer.STOP_LAYERS.get(layer_type), str)):
+                                #     stop_layer = Conv2DLayer(_layer[0].raw_layer)
+                                # else:
+                                #     stop_layer = layer.STOP_LAYERS.get(layer_type)(_layer[0].raw_layer)
+                                _layer[0].passive_prune(filter, model_params, layer_index_dic)
 
                     elif len(_layer)==1 and\
                         _layer[0].is_merge():

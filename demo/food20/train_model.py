@@ -5,8 +5,9 @@ from Food101Task import Food101Task
 
 
 task = Food101Task('demo/food20/config.cfg')
-model = task.prepare_model(filename='trained_model.h5')
+model = task.prepare_model(type="mobilenet_v2")#filename='trained_model.h5')
 model.summary()
+
 compressed_model = task.compress(model)
 compressed_model.summary()
 # compressed_model = model_prune(
