@@ -1,5 +1,5 @@
 import tensorflow as tf
-from core.Task import Task
+from Core.Task import Task
 import os
 from food101 import get_food101_data
 from tensorflow.keras.callbacks import ModelCheckpoint, CSVLogger

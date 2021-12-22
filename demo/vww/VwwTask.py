@@ -1,5 +1,5 @@
 import tensorflow as tf
-from core.Task import Task
+from Core.Task import Task
 import os
 import numpy as np
 from keras_flops import get_flops

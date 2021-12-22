@@ -1,4 +1,4 @@
-from core.layers.Conv2DLayer import Conv2DLayer
+from Core.layers.Conv2DLayer import Conv2DLayer
 
 def delete_filter_after(
         new_model_param,

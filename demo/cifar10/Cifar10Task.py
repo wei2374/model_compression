@@ -1,11 +1,11 @@
 import tensorflow as tf
-from core.Task import Task
+from MINI.Core.Task import Task
 import os
 import numpy as np
 from .cifar10 import GetData
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ModelCheckpoint
-from tools.visualization.training_visualization_tool import plot_training_result
+from MINI.Tools.visualization.training_visualization_tool import plot_training_result
 from tensorflow.keras.callbacks import LearningRateScheduler
 
 class Cifar10Task(Task):

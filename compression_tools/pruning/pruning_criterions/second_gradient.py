@@ -24,14 +24,6 @@ def get_and_plot_gradients2(model, get_dataset=None, PLOT=False):
     with Bar(f'Channel importance estimation based on second-order gradient...') as bar:
         crits = {}
         for b in range(batches_n):
-            if isinstance(train_data, tf.data.Dataset):
-                batch = next(iter(train_data))
-            else:
-                batch = next(train_data)
-            if batch[1].ndim==1:
-                loss_fun = "tf.metrics.sparse_categorical_crossentropy(batch[1], pred)"
-            else:
-                loss_fun = "tf.metrics.categorical_crossentropy(batch[1], pred)"
             grad = {}
             # Get gradients
             for conv_index in conv2d_layers:
